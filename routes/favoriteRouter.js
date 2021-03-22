@@ -11,14 +11,14 @@ favoriteRouter.use(express.json());
 
 favoriteRouter.route('/')
 .options(cors.corsWithOptions, (req, res) => { res.sendStatus(200); })
-.get(cors.corsWithOptions, authenticate.verifyUser, (req,res,next) => {
+.get(cors.corsWithOptions, (req,res,next) => {
     Favorites.findOne({user: req.user._id})
     .populate('user')
     .populate('dishes')
     .then((favorite) => {
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');
-        res.json(favorite)
+        res.json(favorite);
     }, (err) => next(err))
     .catch((err) => next(err));
 })

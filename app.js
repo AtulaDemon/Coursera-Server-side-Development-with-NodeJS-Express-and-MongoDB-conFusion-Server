@@ -1,34 +1,32 @@
 var createError = require('http-errors');
 var express = require('express');
 var path = require('path');
-var cookieParser = require('cookie-parser');
 var logger = require('morgan');
-var session = require('express-session');
-var FileStore = require('session-file-store')(session);
 var passport = require('passport');
-var authenticate = require('./authenticate');
-var config = require('./config');
+const db = require("./models");
+const cors = require('./utils/cors');
 
-const mongoose = require('mongoose'); 
+var uploadImage = require('./utils/upload-image');
 
 var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
-var dishRouter = require('./routes/dishRouter');
-var promoRouter = require('./routes/promoRouter');
-var leaderRouter = require('./routes/leaderRouter');
-var uploadRouter = require('./routes/uploadRouter');
-var favoriteRouter = require('./routes/favoriteRouter');
-
-const url = config.mongoUrl;
-const connect = mongoose.connect(url);
-
-connect.then((db) => {
-  console.log('Connected correctly to the db server');
-}, (err) => {
-  console.log(err);
-});
+var userRouter = require('./routes/users-router');
+var dishRouter = require('./routes/dish-router');
+var promoRouter = require('./routes/promotion-router');
+var leaderRouter = require('./routes/leader-router');
+//var favoriteRouter = require('./routes/favoriteRouter');
+var commentRouter = require('./routes/comment-router');
 
 var app = express();
+
+app.use(cors.corsWithOptions);
+
+db.sequelize.sync()
+  .then(function() {
+    console.log('Nice! Database looks fine')
+  })
+  .catch((err) => {
+    next(err);
+  });
 
 app.all('*', (req, res, next) => {
   if (req.secure) {
@@ -45,20 +43,20 @@ app.set('view engine', 'jade');
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-//app.use(cookieParser('12345-67890-09876-54321'));
 
 app.use(passport.initialize());
 
-app.use('/', indexRouter);
-app.use('/users', usersRouter);
-
 app.use(express.static(path.join(__dirname, 'public')));
 
+app.use('/imageUpload', uploadImage);
+
+app.use('/', indexRouter);
+app.use('/users', userRouter);
 app.use('/dishes', dishRouter);
 app.use('/promotions', promoRouter);
 app.use('/leaders', leaderRouter);
-app.use('/imageUpload', uploadRouter);
-app.use('/favorites', favoriteRouter);
+//app.use('/favorites', favoriteRouter);
+app.use('/comments', commentRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
